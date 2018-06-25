@@ -405,13 +405,6 @@ int alphaBeta(int depth, int alpha, int beta, int player, vector<Position> q1){
 }
 
 
-
-
-
-
-//怎么可能间隔？
-//predictRow和predictCol更新有错
-
 int main(){
     //init
     initTable();
