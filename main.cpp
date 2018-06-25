@@ -277,9 +277,6 @@ void getNewPos(vector<Position>& q2, set<Position>& s2, vector<Position>& q1, in
         }
         q2.push_back(*it1);
     }
-
-    //Heuristic search to prune more
-    sort(q2.begin(), q2.end(), portionCompare);
 }
 
 int getShape(string& shape, int row, int col, int rdrct, int cdrct){
@@ -356,11 +353,8 @@ int alphaBeta(int depth, int alpha, int beta, int player, vector<Position> q1){
         return evaluator();
     }
 
-    //convert q1 to s1
-    set<Position> s1;
-    for(vector<Position>::iterator iter = q1.begin(); iter != q1.end(); iter++){
-        s1.insert(*iter);
-    }
+    //Heuristic search to prune more
+    sort(q1.begin(), q1.end(), portionCompare);
 
     if(player == AI){
         int v = MINVALUE;
