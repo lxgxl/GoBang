@@ -12,9 +12,12 @@ using namespace std;
 #define MAN 2
 #define MAXVALUE 999999
 #define MINVALUE -999999
-#define DEPTH 4
+#define DEPTH 6
 #define OFFSET 1
 #define RATIO 1
+
+#define GLOBAL 0
+#define PORTION 1
 
 int nodeCnt = 0;
 int evaCnt = 0;
@@ -62,6 +65,9 @@ int predictRow, predictCol;
 //to mark if the position was calculated
 int chessNumOnDrct[20][20][4];
 
+bool portionCompare(Position, Position);
+int heuristicScore(int, int);
+
 //print the chessboard
 void print(){
     printf("   ");
@@ -90,6 +96,10 @@ void print(){
 //to sort types of chess by their values
 bool compare(ModelShape a, ModelShape b){
     return a.value > b.value;
+}
+
+bool portionCompare(Position a, Position b){
+    return heuristicScore(a.row, a.col) > heuristicScore(b.row, b.col);
 }
 
 //initiate the model
@@ -123,10 +133,12 @@ void initTable(){
     sort(modelTable, modelTable + modelCnt, compare);
 }
 
-int getScore(string shape){
-    for (int i = 0; i < modelCnt; i++){
-        if(shape.find(modelTable[i].shape) != string::npos){
-            return modelTable[i].value;
+int getScore(string shape, int mode = GLOBAL){
+    if(mode == GLOBAL || 1){
+        for (int i = 0; i < modelCnt; i++){
+            if(shape.find(modelTable[i].shape) != string::npos){
+                return modelTable[i].value;
+            }
         }
     }
 
@@ -266,13 +278,81 @@ void getNewPos(vector<Position>& q2, set<Position>& s2, vector<Position>& q1, in
         q2.push_back(*it1);
     }
 
+    //Heuristic search to prune more
+    sort(q2.begin(), q2.end(), portionCompare);
+}
 
+int getShape(string& shape, int row, int col, int rdrct, int cdrct){
+    int i = row, j = col;
+    int me = 0, t = 3;
+
+    while(inBoundary(i, j)){
+        if(chessboard[i][j] != 0 && me == 0){
+            me = chessboard[i][j];
+            t -= me;
+        }
+        else if(chessboard[i][j] == t){
+            break;
+        }
+        i -= rdrct;
+        j -= cdrct;
+    }
+
+    if(me == 0){
+        return 0;
+    }
+
+    i += rdrct;
+    j += cdrct;
+    chessboard[row][col] = me;
+    while(inBoundary(i, j)){
+        if(chessboard[i][j] == t){
+            break;
+        }
+        else if(chessboard[i][j] == me){
+            shape.append("o");
+        }
+        else if(chessboard[i][j] == 0){
+            shape.append("+");
+        }
+        i += rdrct;
+        j += cdrct;
+    }
+    chessboard[row][col] = 0;
+
+    return me;
+}
+
+int heuristicScore(int row, int col){
+    int totalScore = 0;
+    for (int drct = 1; drct < 4; drct++){
+        string shape_a, shape_b;
+        int a = getShape(shape_a, row, col, -direction[drct][0], -direction[drct][1]);
+        int b = getShape(shape_b, row, col, direction[drct][0], direction[drct][1]);
+
+        if(a == 0 && b == 0){
+            totalScore += 0;
+        }
+        else if(a == b){
+            totalScore += getScore(shape_a, PORTION);
+        }
+        else if(a == 0 && b){
+            totalScore += getScore(shape_b, PORTION);
+        }
+        else if(a && b == 0){
+            totalScore += getScore(shape_a, PORTION);
+        }
+        else{
+            totalScore += getScore(shape_a, PORTION) + getScore(shape_b, PORTION);
+        }
+    }
+
+    return totalScore;
 }
 
 int alphaBeta(int depth, int alpha, int beta, int player, vector<Position> q1){
     nodeCnt++;
-    if (depth == 0 || isOver())
-    {
+    if(depth == 0 || isOver()){
         return evaluator();
     }
 
@@ -329,7 +409,8 @@ int alphaBeta(int depth, int alpha, int beta, int player, vector<Position> q1){
 
 
 
-
+//怎么可能间隔？
+//predictRow和predictCol更新有错
 
 int main(){
     //init
@@ -359,7 +440,7 @@ int main(){
             break;
         }
 
-        int value = alphaBeta(DEPTH, MINVALUE, MAXVALUE, AI, q2);
+        int v = alphaBeta(DEPTH, MINVALUE, MAXVALUE, AI, q2);
 
         setPiece(predictRow, predictCol, AI);
 
@@ -379,7 +460,7 @@ int main(){
         }
 
         printf("AI: row=%d, col=%d\n", predictRow, predictCol);
-        printf("Value=%d, %d nodes, %d evaluations\n", value, nodeCnt, evaCnt);
+        printf("Value=%d, %d nodes count, %d evaluation\n", v, nodeCnt, evaCnt);
     }
 
     return 0;
