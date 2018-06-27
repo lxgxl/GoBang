@@ -175,9 +175,11 @@ void initTable(){
     initLoreModel(AttTab, AttCnt++, "oo++o", pieceNum, {2, 3});
     //2
     pieceNum = 2;
-    initLoreModel(AttTab, AttCnt++, "++oo++", pieceNum, {0, 1, 4, 5});
-    initLoreModel(AttTab, AttCnt++, "+o+o++", pieceNum, {0, 2, 4});
-    initLoreModel(AttTab, AttCnt++, "++o+o+", pieceNum, {1, 3, 5});
+    initLoreModel(AttTab, AttCnt++, "+oo+++", pieceNum, {3, 4});
+    initLoreModel(AttTab, AttCnt++, "+++oo+", pieceNum, {1, 2});
+    initLoreModel(AttTab, AttCnt++, "++oo++", pieceNum, {1, 4});
+    initLoreModel(AttTab, AttCnt++, "+o+o++", pieceNum, {2, 4});
+    initLoreModel(AttTab, AttCnt++, "++o+o+", pieceNum, {1, 3});
     initLoreModel(AttTab, AttCnt++, "+o++o+", pieceNum, {2, 3});
 
     //Defender defend, search from ATTACKER. Attacker can use it to defend!
@@ -429,6 +431,7 @@ int heuristicScore(int row, int col){
 
 bool getLorePos(string& shape, int startRow, int startCol, int drct, set<Position> posSave[], LoreModel posTab[], int tabCnt){
 
+    int flag = false;
     for(int i = 0; i < tabCnt; i++){
         int subStrOffset = shape.find(posTab[i].shape);
 
@@ -455,10 +458,10 @@ bool getLorePos(string& shape, int startRow, int startCol, int drct, set<Positio
             posSave[pieceNum].insert(p);
         }
 
-        return true;
+        flag = true;
     }
 
-    return false;
+    return flag;
 }
 
 void unionSet(set<Position>& inS1, set<Position>& dst){
@@ -471,7 +474,7 @@ void unionSet(set<Position>& inS1, set<Position>& dst){
 }
 
 void getDoubleLorePos(set<Position> enemyPos[], string& shape, int startRow, int startCol, int drct, int who){
-    for(int i = 5; i <= 14; i++){
+    for(int i = 5; i <= AttCnt; i++){
         int subStrOffset = shape.find(AttTab[i].shape);
 
         if(subStrOffset == string::npos){
@@ -503,7 +506,7 @@ void getDoubleLorePos(set<Position> enemyPos[], string& shape, int startRow, int
                 }
 
                 getShape(0, shape2, p.row, p.col, drct2, who);
-                for(int j = 5; j <= 14; j++){
+                for(int j = 5; j <= AttCnt; j++){
                     if(shape2.find(AttTab[j].shape) != string::npos){
                         pieceNum = max(pieceNum, AttTab[j].pieceNum);
                         hasShape2 = true;
@@ -637,7 +640,7 @@ int alphaBeta(int depth, int alpha, int beta, int player, vector<Position> q1){
     }
 
     if(depth == DEPTH){
-        if(loreAB(9, 9, player, player, 3-player, 1) == 1){
+        if(loreAB(11, 11, player, player, 3-player, 1) == 1){
             if(player == AI){
                 return MAXVALUE;
             }
@@ -646,8 +649,8 @@ int alphaBeta(int depth, int alpha, int beta, int player, vector<Position> q1){
             }
         }
     }
-    else if(depth == 1){
-        if(loreAB(3, 3, player, player, 3-player, 0) == 1){
+    else if(depth % 2){
+        if(loreAB(3+depth, 3+depth, player, player, 3-player, 0) == 1){
             if(player == AI){
                 return MAXVALUE;
             }
@@ -708,6 +711,8 @@ bool isLegal(int row, int col){
     if(inBoundary(row, col) && !chessboard[row][col]){
         return true;
     }
+
+    printf("The position is invalid!\n");
     return false;
 }
 
@@ -724,7 +729,6 @@ int main(){
         int row, col;
         do{
             cin >> row >> col;
-            printf("The position is invalid!\n");
         }while(!isLegal(row, col));
 
         setPiece(row, col, MAN);
