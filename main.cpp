@@ -704,6 +704,13 @@ int alphaBeta(int depth, int alpha, int beta, int player, vector<Position> q1){
 }
 
 
+bool isLegal(int row, int col){
+    if(inBoundary(row, col) && !chessboard[row][col]){
+        return true;
+    }
+    return false;
+}
+
 int main(){
     //init
     initTable();
@@ -715,7 +722,10 @@ int main(){
     print();
     while(1){
         int row, col;
-        cin >> row >> col;
+        do{
+            cin >> row >> col;
+            printf("The position is invalid!\n");
+        }while(!isLegal(row, col));
 
         setPiece(row, col, MAN);
 
