@@ -210,7 +210,7 @@ int getScore(string shape){
     return 0;
 }
 
-void getShape(string& shape, int row, int col, int drct,int who, int* startRow = NULL, int* startCol = NULL, int* endRow = NULL, int *endCol = NULL){
+void getShape(bool setChessOnDrct, string& shape, int row, int col, int drct,int who, int* startRow = NULL, int* startCol = NULL, int* endRow = NULL, int *endCol = NULL){
     if(chessNumOnDrct[row][col][drct] == -1){
         return;
     }
@@ -232,7 +232,9 @@ void getShape(string& shape, int row, int col, int drct,int who, int* startRow =
         }
         else if(chessboard[i][j] != 0){
             shape.append("o");
-            chessNumOnDrct[i][j][drct] = -1;
+            if(setChessOnDrct){
+                chessNumOnDrct[i][j][drct] = -1;
+            }
         }
         i += direction[drct][0];
         j += direction[drct][1];
@@ -264,7 +266,7 @@ int evaluator(){
             }
 
             string shape;
-            getShape(shape, row, col, drct, player);
+            getShape(1, shape, row, col, drct, player);
 
             if(chessboard[row][col] == AI){
                 totalScore += getScore(shape) * RATIO;
@@ -468,7 +470,7 @@ void unionSet(set<Position>& inS1, set<Position>& dst){
     }
 }
 
-void getDoubleLorePos(string& shape, int startRow, int startCol, int drct, int who){
+void getDoubleLorePos(set<Position> enemyPos[], string& shape, int startRow, int startCol, int drct, int who){
     for(int i = 5; i <= 14; i++){
         int subStrOffset = shape.find(AttTab[i].shape);
 
@@ -483,7 +485,7 @@ void getDoubleLorePos(string& shape, int startRow, int startCol, int drct, int w
         for(vector<int>::iterator it = AttTab[i].effectivePos.begin(); it != AttTab[i].effectivePos.end(); it++){
             Position p(offsetRow + *it * direction[drct][0], offsetCol + *it * direction[drct][1]);
 
-            if(!inBoundary(p.row, p.col)){
+            if(!inBoundary(p.row, p.col) || enemyPos[pieceNum].count(p)){
                 continue;
             }
             if(*it < 0 || *it >= AttTab[i].shape.length()){
@@ -500,14 +502,16 @@ void getDoubleLorePos(string& shape, int startRow, int startCol, int drct, int w
                     continue;
                 }
 
-                getShape(shape2, p.row, p.col, drct2, who);
+                getShape(0, shape2, p.row, p.col, drct2, who);
                 for(int j = 5; j <= 14; j++){
-                    if(shape2.find(AttTab[i].shape) != string::npos){
+                    if(shape2.find(AttTab[j].shape) != string::npos){
+                        pieceNum = max(pieceNum, AttTab[j].pieceNum);
                         hasShape2 = true;
                         break;
                     }
                 }
                 if(hasShape2){
+                    enemyPos[pieceNum].insert(p);
                     break;
                 }
             }
@@ -541,7 +545,7 @@ int loreAB(int depth, int maxDepth, int player, int attacker, int defender, bool
             for (int drct = 0; drct < 4; drct++){
                 string shape;
                 int startRow, startCol;
-                getShape(shape, row, col, drct, chessboard[row][col], &startRow, &startCol);
+                getShape(1, shape, row, col, drct, chessboard[row][col], &startRow, &startCol);
 
                 if(chessboard[row][col] == attacker){
                     getLorePos(shape, startRow, startCol, drct, myPos, AttTab, AttCnt);
@@ -586,7 +590,7 @@ int loreAB(int depth, int maxDepth, int player, int attacker, int defender, bool
             for (int drct = 0; drct < 4; drct++){
                 string shape;
                 int startRow, startCol;
-                getShape(shape, row, col, drct, chessboard[row][col], &startRow, &startCol);
+                getShape(1, shape, row, col, drct, chessboard[row][col], &startRow, &startCol);
 
                 if(chessboard[row][col] == defender){       //defender attack
                     getLorePos(shape, startRow, startCol, drct, myPos, AttTab, AttCnt);
@@ -594,7 +598,7 @@ int loreAB(int depth, int maxDepth, int player, int attacker, int defender, bool
                 else{         //defender defend
                     bool geted = getLorePos(shape, startRow, startCol, drct, enemyPos, DefDTab, DefDCnt);
                     if(!geted){   //not geted obvious threat
-                        getDoubleLorePos(shape, startRow, startCol, drct, attacker);
+                        getDoubleLorePos(enemyPos, shape, startRow, startCol, drct, attacker);
                     }
                 }
             }
