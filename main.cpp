@@ -25,6 +25,7 @@ using namespace std;
 int nodeCnt = 0;
 int evaCnt = 0;
 int loreCnt = 0;
+int chekiCnt = 0;
 
 //four directions
 int direction[4][2] = {{0, 1}, {1, 0}, {1, -1}, {1, 1}};
@@ -640,22 +641,26 @@ int alphaBeta(int depth, int alpha, int beta, int player, vector<Position> q1){
     }
 
     if(depth == DEPTH){
-        if(loreAB(11, 11, player, player, 3-player, 1) == 1){
-            if(player == AI){
-                return MAXVALUE;
-            }
-            else{
-                return MINVALUE;
+        for(int i = 3; i <= 11; i+=2){
+            if(loreAB(i, i, player, player, 3-player, 1) == 1){
+                if(player == AI){
+                    return MAXVALUE;
+                }
+                else{
+                    return MINVALUE;
+                }
             }
         }
     }
     else if(depth % 2){
-        if(loreAB(3+depth, 3+depth, player, player, 3-player, 0) == 1){
-            if(player == AI){
-                return MAXVALUE;
-            }
-            else{
-                return MINVALUE;
+        for(int i = 0; i <= 6; i+=2){
+            if(loreAB(i+depth, i+depth, player, player, 3-player, 0) == 1){
+                if(player == AI){
+                    return MAXVALUE;
+                }
+                else{
+                    return MINVALUE;
+                }
             }
         }
     }
@@ -711,25 +716,83 @@ bool isLegal(int row, int col){
     if(inBoundary(row, col) && !chessboard[row][col]){
         return true;
     }
-
-    printf("The position is invalid!\n");
+    
     return false;
+}
+
+void theFinal(){
+    printf("\n\n\n");
+    printf("Your cheki count: %d\n", chekiCnt);
+    printf("\nThe steps:\n");
+    for(vector<Position>::iterator it = pieceOnBoard.begin(); it != pieceOnBoard.end(); it++){
+        printf("%d %d\n", it->row, it->col);
+    }
+
+    string endstr;
+    printf("Please input 'end' to end the game\n");
+    do{
+        cin >> endstr;
+    }while(endstr == "end");
+}
+
+
+//**NOTE:All pieces are PUSHED to array, so we must delite piece in order
+void cheki(){
+    if(pieceOnBoard.empty() || pieceOnBoard.size() < 2){
+        printf("No enough piece on the chessboard!\n");
+        return;
+    }
+    chekiCnt++;
+    delPiece(pieceOnBoard.back().row, pieceOnBoard.back().col);
+    delPiece(pieceOnBoard.back().row, pieceOnBoard.back().col);
+    print();
 }
 
 int main(){
     //init
     initTable();
 
-    setPiece(8, 8, AI);
+    printf("\t\t\t\t1.You First\n\t\t\t\t2.AI First\n\t\t\t\tYou can cheki by inputing -1\n\n\nChoose:");
+    int choose;
+    cin >> choose;
+
+    int row, col;
+    string endstr;
     vector<Position> q1, t;
     set<Position> s1;
-    getNewPos(q1, s1, t, 8, 8);
-    print();
     while(1){
-        int row, col;
-        do{
-            cin >> row >> col;
-        }while(!isLegal(row, col));
+        if(choose == 1){
+            break;
+        }
+        else if(choose == 2){
+            setPiece(8, 8, AI);
+            getNewPos(q1, s1, t, 8, 8);
+            print();
+            break;
+        }
+        else{
+            printf("Your choose is invalid, reinput:");
+            cin >> choose;
+        }
+    }
+
+    
+    while(1){
+        while(1){
+            cin >> row;
+            if(row == -1){
+                cheki();
+            }
+            else{
+                cin >> col;
+                if(isLegal(row, col)){
+                    break;
+                }
+                else{
+                    printf("The position is invalid!\n");
+                }
+            }
+        }
 
         setPiece(row, col, MAN);
 
@@ -741,6 +804,7 @@ int main(){
 
         if(isOver()){
             cout << "You win!\n";
+            theFinal();
             getchar();
             getchar();
             break;
@@ -759,6 +823,7 @@ int main(){
 
         if(isOver()){
             cout << "AI win!\n";
+            theFinal();
             getchar();
             getchar();
             break;
@@ -769,9 +834,6 @@ int main(){
         nodeCnt = 0;
         evaCnt = 0;
         loreCnt = 0;
-        // if(loreRow != predictRow || loreCol != predictCol){
-        //     printf("Error!\n");
-        // }
     }
 
     return 0;
